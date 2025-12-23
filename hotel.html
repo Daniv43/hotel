@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="hu">
+<head>
+    <meta charset="UTF-8">
+    <title>Grand Hotel & Buffet Management v15</title>
+    <link href="https://fonts.googleapis.com/css2?family=VT323&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --term-grey: #1a1a1a;
+            --lcd-green: #39ff14;
+            --lcd-text: #042104;
+            --scratch: url('https://www.transparenttextures.com/patterns/stardust.png');
+            --os-blue: #2c3e50;
+            --win-grey: #dfdfdf;
+        }
+
+        body {
+            margin: 0; height: 100vh; display: flex; justify-content: center; align-items: center;
+            background: #0a0a0a; font-family: 'Segoe UI', sans-serif; gap: 50px; overflow: hidden;
+        }
+
+        /* --- LAPTOP --- */
+        .laptop-container { position: relative; display: flex; align-items: center; }
+        .side-power-trigger {
+            width: 14px; height: 45px; background: linear-gradient(to right, #444, #222);
+            border-radius: 5px 0 0 5px; cursor: pointer; position: absolute; left: -14px; top: 120px;
+            border: 1px solid #000; display: flex; align-items: center; justify-content: center;
+        }
+        .power-led { width: 5px; height: 5px; border-radius: 50%; background: #200; transition: 0.3s; }
+        .sys-on .power-led { background: #0f0; box-shadow: 0 0 5px #0f0; }
+
+        .laptop-frame { 
+            width: 620px; background: linear-gradient(to bottom, #d1d1d1, #888); padding: 12px; border-radius: 0 6px 6px 0; 
+            border-bottom: 10px solid #444; background-image: var(--scratch);
+        }
+        .laptop-screen { 
+            background: #000; height: 550px; border: 6px solid #111; 
+            position: relative; overflow: hidden; display: flex; flex-direction: column;
+            box-shadow: inset 0 0 30px rgba(0,0,0,0.5);
+        }
+        .sys-on .laptop-screen { background: var(--os-blue); }
+
+        .os-layer { display: none; flex-direction: column; height: 100%; width: 100%; }
+        .sys-on .os-layer { display: flex; }
+
+        .window {
+            position: absolute; top: 15px; left: 15px; right: 15px; bottom: 55px;
+            background: var(--win-grey); border: 2px solid #333; display: none; flex-direction: column;
+            box-shadow: 4px 4px 0px rgba(0,0,0,0.2);
+        }
+        .window.active { display: flex; }
+        .win-header { background: #1a2a3a; color: white; padding: 5px 10px; font-size: 13px; font-weight: bold; }
+        .win-body { flex: 1; display: flex; flex-direction: column; overflow: hidden; }
+        .scroll-area { flex: 1; padding: 10px; overflow-y: auto; background: #eee; }
+
+        /* --- TERMINÁL --- */
+        .terminal-container { position: relative; z-index: 10; }
+        .pos-shell {
+            width: 230px; background: linear-gradient(to bottom, #333, #111); border-radius: 15px; padding: 25px;
+            background-image: var(--scratch); border: 2px solid #000; box-shadow: 0 10px 25px rgba(0,0,0,0.8);
+            position: relative; z-index: 5;
+        }
+        .led { width: 8px; height: 8px; background: #400; border-radius: 50%; position: absolute; top: 10px; left: 50%; transform: translateX(-50%); transition: 0.3s; }
+        .printer-slot { width: 105px; height: 6px; background: #000; margin: -10px auto 15px; border-radius: 2px; }
+        
+        .lcd { background: #080a08; height: 90px; border: 2px solid #222; position: relative; overflow: hidden; }
+        .lcd-content { 
+            background: var(--lcd-green); height: 100%; padding: 10px; color: var(--lcd-text); 
+            font-family: 'VT323'; display: none;
+        }
+        .sys-on .lcd-content { display: block; }
+
+        .numpad { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-top: 15px; }
+        .k { padding: 12px; background: #2a2a2a; color: #555; border: 1px solid #000; font-family: 'VT323'; cursor: pointer; transition: 0.1s; border-radius: 4px; border-bottom: 3px solid #000; }
+        .sys-on .k { color: #eee; }
+        .k:hover { background: #3a3a3a; transform: translateY(-1px); }
+        .k:active { transform: translateY(1px); border-bottom: 1px solid #000; }
+        .zero { grid-column: 2; }
+        .function-buttons { display: flex; justify-content: space-between; margin-top: 10px; }
+
+        /* KÁRTYA ÉS NYUGTA */
+        #bank-card { 
+            width: 120px; height: 75px; background: linear-gradient(135deg, #1a1a1a, #444); position: absolute; z-index: 20; 
+            display: none; top: -160px; left: 55px; border: 1px solid #777; color: white; padding: 8px;
+            border-radius: 8px; box-shadow: 0 5px 15px rgba(0,0,0,0.5); font-size: 8px; font-family: monospace;
+        }
+        .touch-active { display: block !important; animation: cardTouch 1.5s forwards; }
+        @keyframes cardTouch { 0% { top: -160px; opacity:1; } 80% { top: -45px; opacity:1; } 100% { top: -45px; opacity:0; } }
+
+        #receipt { 
+            width: 110px; background: #fff; position: absolute; 
+            top: 25px; left: 60px; z-index: 1; height: 0; overflow: hidden;
+            font-size: 8px; font-family: 'VT323', monospace; text-align: center; color: black;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2); cursor: pointer;
+        }
+        .receipt-content { padding: 8px; border-bottom: 3px dashed #bbb; background: white; }
+        .printed-anim { transition: height 2s linear, top 2s linear; height: 260px !important; top: -235px !important; }
+        .ripped-anim { transition: transform 0.6s ease-in, opacity 0.4s ease-in !important; transform: translateY(-600px) translateX(300px) rotate(45deg) !important; opacity: 0 !important; }
+
+        .led.blink { background: #0f0; animation: blink 0.5s infinite; }
+        @keyframes blink { 0%,50% { opacity: 1; } 51%,100% { opacity: 0; } }
+
+        .taskbar { height: 40px; background: #c0c0c0; border-top: 2px solid #fff; position: absolute; bottom: 0; left: 0; right: 0; display: flex; align-items: center; padding: 0 10px; gap: 8px; }
+        .start-btn { background: #bbb; border: 2px outset #fff; padding: 2px 8px; cursor: pointer; font-size: 11px; font-weight: bold; }
+        
+        .item-row { display:flex; justify-content:space-between; align-items:center; margin-bottom:5px; background:#fff; padding:8px; border:1px solid #ccc; border-radius:4px; }
+    </style>
+</head>
+<body id="body-main">
+
+<div class="laptop-container">
+    <div class="side-power-trigger" onclick="togglePower()"><div class="power-led"></div></div>
+    <div class="laptop-frame">
+        <div id="l-screen" class="laptop-screen">
+            <div class="os-layer">
+                
+                <div id="win-rooms" class="window active">
+                    <div class="win-header">HotelManager - Rooms</div>
+                    <div class="win-body">
+                        <div class="scroll-area" id="room-list"></div>
+                    </div>
+                </div>
+
+                <div id="win-buffet" class="window">
+                    <div class="win-header">BuffetControl - Menu</div>
+                    <div class="win-body">
+                        <div class="scroll-area" id="buffet-list"></div>
+                    </div>
+                </div>
+
+                <div id="win-excel" class="window">
+                    <div class="win-header">Revenue_Report.xls</div>
+                    <div class="win-body" style="padding:10px;">
+                        <table style="width:100%; border-collapse:collapse; background:white; font-size:10px;">
+                            <thead><tr style="background:#2c3e50; color:white;"><th>Tétel</th><th>Eladott</th><th>Összeg</th></tr></thead>
+                            <tbody id="excel-rows"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <div style="position:absolute; bottom:40px; left:15px; right:15px; height:80px; background:#d6d6d6; border:2px solid #333; padding:10px; z-index:100; box-sizing:border-box;">
+                    <div style="display:flex; justify-content:space-between; align-items:center;">
+                        <span style="font-size:18px;">Összesen: <b id="lp-total">0</b> Ft</span>
+                        <button onclick="startPay()" style="background:#2c3e50; color:white; padding:10px 20px; border:none; cursor:pointer; font-weight:bold;">FIZETÉS</button>
+                    </div>
+                </div>
+
+                <div class="taskbar">
+                    <div class="start-btn" onclick="shutdown()" style="color:red;">Shutdown</div>
+                    <div class="start-btn" onclick="switchApp('rooms')">Szobák</div>
+                    <div class="start-btn" onclick="switchApp('buffet')">Büfé</div>
+                    <div class="start-btn" onclick="switchApp('excel')">Statisztika</div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="terminal-container">
+    <div id="bank-card"><div class="card-chip"></div>PROCESSING...</div>
+    <div id="receipt" onclick="ripReceipt()">
+        <div class="receipt-content">
+            ** SZÁMLA / INVOICE **<br>
+            GRAND HOTEL & BUFFET<br>
+            <hr>
+            <div id="r-items" style="text-align:left; font-size:7px;"></div>
+            <hr>
+            Összesen: <span id="r-brutto"></span> Ft<br>
+            <br>Visszavárjuk!
+        </div>
+    </div>
+    
+    <div class="pos-shell">
+        <div class="led" id="status-led"></div>
+        <div class="printer-slot"></div>
+        <div class="lcd">
+            <div id="lcd-on" class="lcd-content">
+                <div id="status">READY</div>
+                <div id="disp" style="font-size:32px; font-weight:bold; margin-top:10px;">0</div>
+            </div>
+        </div>
+        <div class="numpad">
+            <button class="k" onclick="pTerm(7)">7</button><button class="k" onclick="pTerm(8)">8</button><button class="k" onclick="pTerm(9)">9</button>
+            <button class="k" onclick="pTerm(4)">4</button><button class="k" onclick="pTerm(5)">5</button><button class="k" onclick="pTerm(6)">6</button>
+            <button class="k" onclick="pTerm(1)">1</button><button class="k" onclick="pTerm(2)">2</button><button class="k" onclick="pTerm(3)">3</button>
+            <button class="k zero" onclick="pTerm(0)">0</button>
+        </div>
+        <div class="function-buttons">
+            <button class="k" onclick="rTerm()" style="background:#700; color:white;">C</button>
+            <button class="k" onclick="cTerm()" style="background:#050; color:white; width:60px;">OK</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    let inventory = [
+        { id: 0, cat: 'room', name: 'Sima szoba', price: 5000, currentQty: 0, totalSold: 0 },
+        { id: 1, cat: 'room', name: 'VIP szoba', price: 10000, currentQty: 0, totalSold: 0 },
+        { id: 2, cat: 'food', name: 'Gulyásleves', price: 2300, currentQty: 0, totalSold: 0 },
+        { id: 3, cat: 'food', name: 'Borsóleves', price: 2300, currentQty: 0, totalSold: 0 },
+        { id: 4, cat: 'food', name: 'Steak', price: 4500, currentQty: 0, totalSold: 0 },
+        { id: 5, cat: 'food', name: 'Rétes', price: 2100, currentQty: 0, totalSold: 0 },
+        { id: 6, cat: 'food', name: 'Palacsinta', price: 1000, currentQty: 0, totalSold: 0 },
+        { id: 7, cat: 'food', name: 'Tiramisu', price: 2000, currentQty: 0, totalSold: 0 }
+    ];
+
+    let input = "", activePay = false, totalToPay = 0, isPowered = false, askingReceipt = false, canRip = false;
+    const ctx = new (window.AudioContext || window.webkitAudioContext)();
+
+    function beep(f, d, v) { if(!isPowered && f!==600) return; const o=ctx.createOscillator(), g=ctx.createGain(); o.frequency.value=f; g.gain.setValueAtTime(v, ctx.currentTime); o.connect(g); g.connect(ctx.destination); o.start(); o.stop(ctx.currentTime+d); }
+
+    function togglePower() {
+        isPowered = !isPowered;
+        if(isPowered) { document.body.classList.add('sys-on'); beep(600, 0.1, 0.1); }
+        else { shutdown(); }
+    }
+
+    function shutdown() {
+        isPowered = false; document.body.classList.remove('sys-on');
+        inventory.forEach(i => i.currentQty = 0);
+        renderAll();
+    }
+
+    function renderAll() {
+        const rList = document.getElementById('room-list');
+        const bList = document.getElementById('buffet-list');
+        const eRows = document.getElementById('excel-rows');
+        rList.innerHTML = ''; bList.innerHTML = ''; eRows.innerHTML = '';
+        totalToPay = 0;
+
+        inventory.forEach(item => {
+            totalToPay += item.price * item.currentQty;
+            const html = `<div class="item-row">
+                <span><b>${item.name}</b><br><small>${item.price} Ft</small></span>
+                <div><button onclick="upd(${item.id},-1)">-</button> <b style="margin:0 5px">${item.currentQty}</b> <button onclick="upd(${item.id},1)">+</button></div>
+            </div>`;
+            if(item.cat === 'room') rList.innerHTML += html;
+            else bList.innerHTML += html;
+
+            eRows.innerHTML += `<tr><td>${item.name}</td><td align="center">${item.totalSold}</td><td align="right">${(item.totalSold*item.price).toLocaleString()} Ft</td></tr>`;
+        });
+        document.getElementById('lp-total').innerText = totalToPay.toLocaleString('hu-HU');
+    }
+
+    function upd(id, d) { if(inventory[id].currentQty+d >= 0) { inventory[id].currentQty+=d; renderAll(); beep(400,0.05,0.05); } }
+
+    function switchApp(app) {
+        document.querySelectorAll('.window').forEach(w => w.classList.remove('active'));
+        document.getElementById('win-' + app).classList.add('active');
+        beep(500, 0.02, 0.05);
+    }
+
+    function startPay() { if(totalToPay > 0 && isPowered) { activePay = true; input = ""; document.getElementById('status').innerText = "ÖSSZEG:"; document.getElementById('disp').innerText = "0"; } }
+    
+    function pTerm(n) { if(activePay && isPowered && !askingReceipt) { input += n; document.getElementById('disp').innerText = input; beep(450,0.05,0.08); } }
+    
+    function rTerm() { if(askingReceipt) { askingReceipt = false; document.getElementById('status').innerText = "READY"; activePay = false; } else { input = input.slice(0, -1); document.getElementById('disp').innerText = input || "0"; } }
+
+    function cTerm() {
+        if(askingReceipt) {
+            askingReceipt = false; document.getElementById('status').innerText = "NYOMTATÁS...";
+            setTimeout(() => { beep(800, 1.5, 0.05); document.getElementById('receipt').classList.add('printed-anim'); canRip = true; }, 100);
+        } else if(activePay && parseInt(input) === totalToPay) {
+            document.getElementById('status').innerText = "KÁRTYA...";
+            document.getElementById('bank-card').classList.add('touch-active');
+            setTimeout(() => {
+                document.getElementById('bank-card').classList.remove('touch-active');
+                const ri = document.getElementById('r-items'); ri.innerHTML = '';
+                inventory.forEach(i => { if(i.currentQty > 0) { ri.innerHTML += `${i.name} x${i.currentQty} - ${i.price*i.currentQty} Ft<br>`; i.totalSold += i.currentQty; i.currentQty = 0; } });
+                document.getElementById('r-brutto').innerText = totalToPay.toLocaleString();
+                renderAll();
+                document.getElementById('status').innerText = "SIKERES!";
+                askingReceipt = true;
+                setTimeout(() => { document.getElementById('status').innerText = "KÉR BLOKKOT? (OK)"; }, 1500);
+            }, 2000);
+        }
+    }
+
+    function ripReceipt() {
+        if(!canRip) return; canRip = false;
+        document.getElementById('receipt').classList.add('ripped-anim'); 
+        setTimeout(() => {
+            const r = document.getElementById('receipt'); r.className = ""; r.style.height = "0";
+            document.getElementById('status').innerText = "READY"; document.getElementById('disp').innerText = "0";
+            activePay = false;
+        }, 600);
+    }
+
+    renderAll();
+</script>
+</body>
+</html>
